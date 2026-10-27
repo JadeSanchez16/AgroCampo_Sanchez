@@ -8,15 +8,18 @@ import kotlin.test.assertTrue
 
 class ScBCommonTest {
     @Test
-    fun supervisorMantieneGestionDeUsuariosSinHeredarCierreDeCampania() {
+    fun supervisorCalidadEditaLaboresSinHeredarCierreDeCampania() {
         val supervisor = Sesion(
             token = "jwt",
-            usuario = "supervisor1",
-            rol = "SUPERVISOR",
-            privilegios = setOf("USUARIO_GESTIONAR", "LOTE_VER", "LABOR_VER"),
+            usuario = "supervisor.calidad",
+            rol = "SUPERVISOR_CALIDAD",
+            privilegios = setOf("LOTE_LEER", "LABOR_LEER", "LABOR_EDITAR"),
         )
 
-        assertTrue(supervisor.puede("USUARIO_GESTIONAR"))
+        assertTrue(supervisor.puede("LABOR_EDITAR"))
         assertFalse(supervisor.puede("CAMPANIA_CERRAR"))
+        assertFalse(supervisor.puede("LABOR_CREAR"))
+        assertFalse(supervisor.puede("LABOR_ELIMINAR"))
+        assertFalse(supervisor.puede("USUARIO_GESTIONAR"))
     }
 }
