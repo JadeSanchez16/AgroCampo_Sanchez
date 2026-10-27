@@ -1,0 +1,77 @@
+CREATE TABLE lote (
+  id INTEGER NOT NULL PRIMARY KEY,
+  codigo TEXT NOT NULL,
+  nombre TEXT NOT NULL,
+  hectareas REAL NOT NULL,
+  cultivo TEXT NOT NULL,
+  valle TEXT NOT NULL,
+  campaniaCerrada INTEGER NOT NULL,
+  dosisMaxima REAL NOT NULL
+);
+
+CREATE TABLE labor (
+  id INTEGER NOT NULL PRIMARY KEY,
+  loteId INTEGER NOT NULL REFERENCES lote(id) ON DELETE CASCADE,
+  tipo TEXT NOT NULL,
+  fecha TEXT NOT NULL,
+  responsable TEXT NOT NULL,
+  cantidad REAL NOT NULL,
+  cantidadJornales INTEGER NOT NULL DEFAULT 0,
+  observacion TEXT NOT NULL,
+  pendiente INTEGER NOT NULL,
+  operacionPendiente TEXT,
+  creadoEn TEXT
+);
+
+CREATE TABLE metadato (
+  clave TEXT NOT NULL PRIMARY KEY,
+  valor TEXT NOT NULL
+);
+
+observarLotes:
+SELECT lote.*, COUNT(CASE WHEN labor.pendiente = 1 THEN 1 END) AS pendientes
+FROM lote LEFT JOIN labor ON lote.id = labor.loteId
+WHERE (:texto = '' OR LOWER(lote.nombre) LIKE '%' || LOWER(:texto) || '%' OR LOWER(lote.codigo) LIKE '%' || LOWER(:texto) || '%')
+  AND (:valle = '' OR lote.valle = :valle)
+  AND (:soloAbiertas = 0 OR lote.campaniaCerrada = 0)
+GROUP BY lote.id
+ORDER BY lote.codigo;
+
+observarLaboresPorLote:
+SELECT * FROM labor WHERE loteId = ? ORDER BY fecha DESC, id DESC;
+
+seleccionarLote:
+SELECT * FROM lote WHERE id = ?;
+
+seleccionarPendientes:
+SELECT * FROM labor WHERE pendiente = 1 ORDER BY id;
+
+siguienteIdLocal:
+SELECT COALESCE(MIN(id), 0) FROM labor;
+
+guardarLote:
+INSERT OR REPLACE INTO lote(id, codigo, nombre, hectareas, cultivo, valle, campaniaCerrada, dosisMaxima)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+
+guardarLabor:
+INSERT OR REPLACE INTO labor(id, loteId, tipo, fecha, responsable, cantidad, cantidadJornales, observacion, pendiente, operacionPendiente, creadoEn)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+reemplazarIdProvisional:
+UPDATE labor SET id = :idDefinitivo, pendiente = 0, operacionPendiente = NULL, creadoEn = :creadoEn
+WHERE id = :idProvisional;
+
+marcarSincronizada:
+UPDATE labor SET pendiente = 0, operacionPendiente = NULL, creadoEn = :creadoEn WHERE id = :id;
+
+eliminarLabor:
+DELETE FROM labor WHERE id = ?;
+
+eliminarLaboresSinPendientesPorLote:
+DELETE FROM labor WHERE loteId = ? AND pendiente = 0;
+
+guardarMetadato:
+INSERT OR REPLACE INTO metadato(clave, valor) VALUES (?, ?);
+
+leerMetadato:
+SELECT valor FROM metadato WHERE clave = ?;
