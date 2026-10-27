@@ -6,6 +6,8 @@ import org.koin.dsl.module
 import pe.upeu.agrosierra.data.local.AlmacenSeguro
 import pe.upeu.agrosierra.data.local.AlmacenSeguroAndroid
 import pe.upeu.agrosierra.data.local.crearBaseLocalAndroid
+import pe.upeu.agrosierra.data.local.ObservadorConexion
+import pe.upeu.agrosierra.data.local.ObservadorConexionAndroid
 import pe.upeu.agrosierra.data.remote.AgroApi
 import pe.upeu.agrosierra.data.remote.TokenProvider
 import pe.upeu.agrosierra.data.remote.crearClienteHttp
@@ -19,6 +21,7 @@ import pe.upeu.agrosierra.presentation.AppViewModel
 
 val platformModule = module {
     single<AlmacenSeguro> { AlmacenSeguroAndroid(androidContext()) }
+    single<ObservadorConexion> { ObservadorConexionAndroid(androidContext()) }
     single { crearBaseLocalAndroid(androidContext()) }
     single { TokenProvider() }
     single { crearClienteHttp(OkHttp.create()) { get<TokenProvider>().token } }
@@ -34,4 +37,4 @@ val dataModule = module {
     single<LaborRepository> { get<LaborRepositoryImpl>() }
 }
 val domainModule = module { }
-val presentationModule = module { single { AppViewModel(get(), get(), get()) } }
+val presentationModule = module { single { AppViewModel(get(), get(), get(), get()) } }
