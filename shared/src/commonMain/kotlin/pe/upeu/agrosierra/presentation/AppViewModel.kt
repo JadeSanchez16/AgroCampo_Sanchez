@@ -8,6 +8,7 @@ import kotlinx.coroutines.launch
 import pe.upeu.agrosierra.domain.model.*
 import pe.upeu.agrosierra.domain.repository.*
 import pe.upeu.agrosierra.data.local.ObservadorConexion
+import pe.upeu.agrosierra.domain.usecase.SincronizarUseCase
 
 enum class Pantalla { LOGIN, LOTES, DETALLE, PERFIL, FORMULARIO }
 data class FiltrosLote(val texto: String = "", val valle: String = "", val soloAbiertas: Boolean = false)
@@ -15,7 +16,7 @@ data class FormularioLabor(val id: Long = 0, val loteId: Long = 0, val tipo: Tip
 data class EstadoApp(val pantalla: Pantalla = Pantalla.LOGIN, val sesion: Sesion? = null, val cargando: Boolean = false, val lotes: List<LoteConPendientes> = emptyList(), val loteSeleccionado: Lote? = null, val labores: List<Labor> = emptyList(), val filtros: FiltrosLote = FiltrosLote(), val formulario: FormularioLabor = FormularioLabor(), val mensaje: String? = null, val ultimaSincronizacion: String? = null)
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-class AppViewModel(private val sesiones: SesionRepository, private val lotesRepo: LoteRepository, private val laboresRepo: LaborRepository, private val conexion: ObservadorConexion) : ViewModel() {
+class AppViewModel(private val sesiones: SesionRepository, private val lotesRepo: LoteRepository, private val laboresRepo: LaborRepository, private val conexion: ObservadorConexion, private val sincronizarUseCase: SincronizarUseCase) : ViewModel() {
     private val mutable = MutableStateFlow(EstadoApp())
     val estado = mutable.asStateFlow()
     private val filtros = MutableStateFlow(FiltrosLote())
@@ -54,7 +55,7 @@ class AppViewModel(private val sesiones: SesionRepository, private val lotesRepo
     fun eliminar(l: Labor) = viewModelScope.launch { runCatching { laboresRepo.eliminar(l.id) }.onSuccess { mutable.update { it.copy(mensaje = "Labor eliminada") } }.onFailure(::mostrarError) }
     fun cerrarCampania() = viewModelScope.launch { estado.value.loteSeleccionado?.let { lote -> runCatching { lotesRepo.cerrarCampania(lote.id) }.onSuccess { mutable.update { it.copy(mensaje = "Campaña cerrada") } }.onFailure(::mostrarError) } }
     fun sincronizar() = viewModelScope.launch {
-        mutable.update { it.copy(cargando = true, mensaje = "Sincronizando…") }; val r = laboresRepo.sincronizar()
+        mutable.update { it.copy(cargando = true, mensaje = "Sincronizando…") }; val r = sincronizarUseCase()
         mutable.update { it.copy(cargando = false, mensaje = "Sincronización: ${r.enviados} enviados, ${r.recibidos} recibidos" + if (r.errores.isEmpty()) "" else ". ${r.errores.joinToString()}", ultimaSincronizacion = lotesRepo.ultimaSincronizacion()) }
     }
     fun limpiarMensaje() = mutable.update { it.copy(mensaje = null) }
