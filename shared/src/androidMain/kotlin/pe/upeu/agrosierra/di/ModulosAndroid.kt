@@ -18,6 +18,7 @@ import pe.upeu.agrosierra.domain.repository.LaborRepository
 import pe.upeu.agrosierra.domain.repository.LoteRepository
 import pe.upeu.agrosierra.domain.repository.SesionRepository
 import pe.upeu.agrosierra.presentation.AppViewModel
+import pe.upeu.agrosierra.domain.usecase.SincronizarUseCase
 
 val platformModule = module {
     single<AlmacenSeguro> { AlmacenSeguroAndroid(androidContext()) }
@@ -36,5 +37,5 @@ val dataModule = module {
     single { LaborRepositoryImpl(get(), get(), get()) { get<TokenProvider>().token?.let { get<SesionRepositoryImpl>().sesion.value?.usuario }.orEmpty() } }
     single<LaborRepository> { get<LaborRepositoryImpl>() }
 }
-val domainModule = module { }
-val presentationModule = module { single { AppViewModel(get(), get(), get(), get()) } }
+val domainModule = module { single { SincronizarUseCase(get()) } }
+val presentationModule = module { single { AppViewModel(get(), get(), get(), get(), get()) } }
