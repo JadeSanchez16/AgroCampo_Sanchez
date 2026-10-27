@@ -5,7 +5,7 @@ import io.ktor.client.network.sockets.ConnectTimeoutException
 import io.ktor.client.network.sockets.SocketTimeoutException
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.HttpStatusCode
-import io.ktor.utils.io.errors.IOException
+import kotlinx.io.IOException
 import pe.upeu.agrosierra.data.remote.dto.ErrorDto
 import pe.upeu.agrosierra.domain.model.ErrorApi
 

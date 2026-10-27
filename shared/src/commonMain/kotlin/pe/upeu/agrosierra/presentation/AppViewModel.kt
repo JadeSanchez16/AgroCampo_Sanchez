@@ -55,9 +55,21 @@ class AppViewModel(private val sesiones: SesionRepository, private val lotesRepo
     fun eliminar(l: Labor) = viewModelScope.launch { runCatching { laboresRepo.eliminar(l.id) }.onSuccess { mutable.update { it.copy(mensaje = "Labor eliminada") } }.onFailure(::mostrarError) }
     fun cerrarCampania() = viewModelScope.launch { estado.value.loteSeleccionado?.let { lote -> runCatching { lotesRepo.cerrarCampania(lote.id) }.onSuccess { mutable.update { it.copy(mensaje = "Campaña cerrada") } }.onFailure(::mostrarError) } }
     fun sincronizar() = viewModelScope.launch {
-        mutable.update { it.copy(cargando = true, mensaje = "Sincronizando…") }; val r = sincronizarUseCase()
-        mutable.update { it.copy(cargando = false, mensaje = "Sincronización: ${r.enviados} enviados, ${r.recibidos} recibidos" + if (r.errores.isEmpty()) "" else ". ${r.errores.joinToString()}", ultimaSincronizacion = lotesRepo.ultimaSincronizacion()) }
+        mutable.update { it.copy(cargando = true, mensaje = "Sincronizando…") }
+        runCatching { sincronizarUseCase() }
+            .onSuccess { r -> mutable.update { it.copy(cargando = false, mensaje = "Sincronización: ${r.enviados} enviados, ${r.recibidos} recibidos" + if (r.errores.isEmpty()) "" else ". ${r.errores.joinToString()}", ultimaSincronizacion = lotesRepo.ultimaSincronizacion()) } }
+            .onFailure(::mostrarError)
     }
     fun limpiarMensaje() = mutable.update { it.copy(mensaje = null) }
-    private fun mostrarError(error: Throwable) = mutable.update { actual -> val campos = (error as? ErrorApi.Validacion)?.campos; actual.copy(cargando = false, mensaje = error.message, formulario = if (campos == null) actual.formulario else actual.formulario.copy(errores = campos)) }
+    private fun mostrarError(error: Throwable) {
+        if (error is ErrorApi.NoAutorizado) {
+            sesiones.cerrar()
+            mutable.value = EstadoApp(mensaje = "La sesión venció. Inicia sesión nuevamente.")
+            return
+        }
+        mutable.update { actual ->
+            val campos = (error as? ErrorApi.Validacion)?.campos
+            actual.copy(cargando = false, mensaje = error.message, formulario = if (campos == null) actual.formulario else actual.formulario.copy(errores = campos))
+        }
+    }
 }

@@ -11,6 +11,7 @@ import pe.upeu.agrosierra.data.remote.comoErrorApi
 import pe.upeu.agrosierra.data.remote.dto.aDominio
 import pe.upeu.agrosierra.data.remote.dto.aRequest
 import pe.upeu.agrosierra.domain.model.Labor
+import pe.upeu.agrosierra.domain.model.ErrorApi
 import pe.upeu.agrosierra.domain.model.OperacionPendiente
 import pe.upeu.agrosierra.domain.model.TipoLabor
 import pe.upeu.agrosierra.domain.repository.LaborRepository
@@ -37,7 +38,16 @@ class LaborRepositoryImpl(
             val definitiva = remota.aDominio()
             local.db.transaction { if (!existente) local.consultas.eliminarLabor(preparada.id); guardarLocal(definitiva) }
             definitiva
-        } catch (_: Throwable) { preparada }
+        } catch (causa: Throwable) {
+            when (val error = causa.comoErrorApi()) {
+                is ErrorApi.Validacion,
+                is ErrorApi.NoAutorizado,
+                is ErrorApi.SinPrivilegio,
+                is ErrorApi.NoEncontrado,
+                is ErrorApi.Conflicto -> throw error
+                else -> preparada
+            }
+        }
     }
 
     override suspend fun eliminar(id: Long) {
@@ -52,7 +62,11 @@ class LaborRepositoryImpl(
                 val remota = if (labor.id < 0 || labor.operacionPendiente == OperacionPendiente.CREAR) api.crear(labor.aRequest()) else api.actualizar(labor.id, labor.aRequest())
                 local.db.transaction { local.consultas.eliminarLabor(labor.id); guardarLocal(remota.aDominio()) }
                 enviados++
-            } catch (e: Throwable) { errores += e.comoErrorApi().message }
+            } catch (e: Throwable) {
+                val error = e.comoErrorApi()
+                if (error is ErrorApi.NoAutorizado) throw error
+                errores += error.message
+            }
         }
         try {
             val pagina = api.lotes()
@@ -66,7 +80,11 @@ class LaborRepositoryImpl(
                 recibidos += remotas.size
             }
             local.consultas.guardarMetadato("ultima_sincronizacion", "${kotlin.time.Clock.System.now()}")
-        } catch (e: Throwable) { errores += e.comoErrorApi().message }
+        } catch (e: Throwable) {
+            val error = e.comoErrorApi()
+            if (error is ErrorApi.NoAutorizado) throw error
+            errores += error.message
+        }
         return ResumenSincronizacion(enviados, recibidos, errores)
     }
 

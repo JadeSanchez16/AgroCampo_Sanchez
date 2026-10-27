@@ -26,6 +26,19 @@ class AgroCampoCommonTest {
         val engine = MockEngine { respond("""{"status":403,"message":"Operación prohibida"}""", HttpStatusCode.Forbidden, jsonHeaders) }
         assertFailsWith<ErrorApi.SinPrivilegio> { AgroApi(crearClienteHttp(engine) { "token" }).lotes() }
     }
+    @Test fun traduce400YConservaErroresDeCampo() = runTest {
+        val engine = MockEngine { respond("""{"status":400,"message":"Datos inválidos","validationErrors":{"cantidad":"Debe ser mayor que cero"}}""", HttpStatusCode.BadRequest, jsonHeaders) }
+        val error = assertFailsWith<ErrorApi.Validacion> { AgroApi(crearClienteHttp(engine) { "token" }).lotes() }
+        assertEquals("Debe ser mayor que cero", error.campos["cantidad"])
+    }
+    @Test fun traduce401ASesionVencida() = runTest {
+        val engine = MockEngine { respond("""{"status":401,"message":"Token vencido"}""", HttpStatusCode.Unauthorized, jsonHeaders) }
+        assertFailsWith<ErrorApi.NoAutorizado> { AgroApi(crearClienteHttp(engine) { "token" }).lotes() }
+    }
+    @Test fun traduce409AConflicto() = runTest {
+        val engine = MockEngine { respond("""{"status":409,"message":"La campaña está cerrada"}""", HttpStatusCode.Conflict, jsonHeaders) }
+        assertFailsWith<ErrorApi.Conflicto> { AgroApi(crearClienteHttp(engine) { "token" }).lotes() }
+    }
     @Test fun registroSinConexionUsaIdNegativoYPendiente() = runTest {
         val base = base(); base.consultas.guardarLote(1, "L-1", "Lote", 1.0, "Papa", "Mantaro", 0, 2.0)
         val api = AgroApi(crearClienteHttp(MockEngine { respondError(HttpStatusCode.ServiceUnavailable) }) { "token" })
