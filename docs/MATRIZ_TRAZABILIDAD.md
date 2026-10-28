@@ -29,7 +29,9 @@ Fecha de verificación: 27 de octubre de 2026. Los estados se basan en código y
 | Sincronización al recuperar red | `ObservadorConexionAndroid`, `AppViewModel` | Compilación; falta prueba instrumental de reconexión | Parcial |
 | Privilegios desde sesión | `Sesion.puede`, UI Compose | Test SC-B y 403 real al cerrar campaña como técnico | Cumplido |
 | Compilación Android | Gradle | `:androidApp:assembleDebug`, BUILD SUCCESSFUL | Cumplido |
-| Pruebas comunes | ocho pruebas comunes y prueba host | `:shared:testAndroidHostTest`, BUILD SUCCESSFUL | Cumplido |
+| Pruebas comunes | 13 pruebas entre suites comunes y host | `:shared:testAndroidHostTest`, 0 fallos y 0 errores | Cumplido |
+| Publicación GitHub | `origin` y 13 ramas remotas | Push confirmado sin force push; `main`, `develop`, siete `feature/*` y cuatro `sc-*` | Cumplido |
+| Pull requests | Comparaciones GitHub preparadas | GitHub CLI ausente y sesión web no autenticada | Bloqueado |
 
 ## Solicitudes complementarias
 
@@ -45,7 +47,7 @@ Fecha de verificación: 27 de octubre de 2026. Los estados se basan en código y
 - `build/agrocampo_login4.png`: pantalla de login ejecutada.
 - `build/agrocampo_lotes_real.png`: login real y padrón descargado desde AgroAPI.
 - `build/agrocampo_offline.png`: sesión y padrón restaurados sin red.
-- Gradle: `BUILD SUCCESSFUL` en 2 min 13 s para pruebas y APK.
+- Gradle final: `BUILD SUCCESSFUL` en 1 min 25 s para 13 pruebas y APK.
 - Integración directa: 401 sin JWT y 403 al intentar cerrar campaña con `tecnico1`.
 
 La ausencia de una captura o prueba explícita mantiene el requisito en parcial aunque exista implementación. No se publica etiqueta estable hasta cerrar esas verificaciones.
